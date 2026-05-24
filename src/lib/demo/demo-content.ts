@@ -51,7 +51,7 @@ export const demoStripeInternshipJobs: NormalizedJob[] = [
 
 export const demoSong: NormalizedTrack = {
   id: "top-tier",
-  title: "Top Tier",
+  title: "cha cha -D.R.A.M",
   artist: "Capapply",
   durationMs: 180_000,
   artworkUrl: null,
