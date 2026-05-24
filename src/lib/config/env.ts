@@ -1,23 +1,27 @@
 import { z } from "zod";
 
+const emptyStringToUndefined = (value: unknown) => (value === "" ? undefined : value);
+const optionalString = z.preprocess(emptyStringToUndefined, z.string().optional());
+const optionalUrl = z.preprocess(emptyStringToUndefined, z.string().url().optional());
+
 const envSchema = z.object({
   ARTIFACT_ROOT: z.string().default("var/capapply"),
   MEDIA_PROVIDER_MODE: z.enum(["mock", "real"]).default("mock"),
-  RAPIDAPI_KEY: z.string().optional(),
+  RAPIDAPI_KEY: optionalString,
   SOUNDCLOUD_SEARCH_URL: z
     .string()
     .url()
     .default("https://soundcloud-scraper.p.rapidapi.com/v1/search/tracks"),
   SOUNDCLOUD_RAPIDAPI_HOST: z.string().default("soundcloud-scraper.p.rapidapi.com"),
-  ELEVENLABS_API_KEY: z.string().optional(),
-  ELEVENLABS_VOICE_ID: z.string().optional(),
-  LYRICS_API_URL: z.string().url().optional(),
-  LYRICS_API_KEY: z.string().optional(),
-  SOURCE_SEPARATION_URL: z.string().url().optional(),
-  SOURCE_SEPARATION_API_KEY: z.string().optional(),
-  LIPSYNC_CREATE_URL: z.string().url().optional(),
-  LIPSYNC_STATUS_URL: z.string().url().optional(),
-  LIPSYNC_API_KEY: z.string().optional(),
+  ELEVENLABS_API_KEY: optionalString,
+  ELEVENLABS_VOICE_ID: optionalString,
+  LYRICS_API_URL: optionalUrl,
+  LYRICS_API_KEY: optionalString,
+  SOURCE_SEPARATION_URL: optionalUrl,
+  SOURCE_SEPARATION_API_KEY: optionalString,
+  LIPSYNC_CREATE_URL: optionalUrl,
+  LIPSYNC_STATUS_URL: optionalUrl,
+  LIPSYNC_API_KEY: optionalString,
 });
 
 export type AppEnv = z.infer<typeof envSchema>;

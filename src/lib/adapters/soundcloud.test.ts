@@ -37,4 +37,36 @@ describe("soundcloud adapter", () => {
     expect(init.headers["x-rapidapi-key"]).toBe("test-key");
     expect(init.headers["x-rapidapi-host"]).toBe("soundcloud-scraper.p.rapidapi.com");
   });
+
+  it("does not call the provider for an empty query", async () => {
+    const fetchMock = vi.fn();
+
+    const tracks = await searchSoundCloudTracks({
+      query: "   ",
+      searchUrl: "https://soundcloud-scraper.p.rapidapi.com/v1/search/tracks",
+      rapidApiKey: "test-key",
+      rapidApiHost: "soundcloud-scraper.p.rapidapi.com",
+      fetchImpl: fetchMock as unknown as typeof fetch,
+    });
+
+    expect(tracks).toEqual([]);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("throws when the provider returns a non-ok response", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 503,
+    });
+
+    await expect(
+      searchSoundCloudTracks({
+        query: "pop",
+        searchUrl: "https://soundcloud-scraper.p.rapidapi.com/v1/search/tracks",
+        rapidApiKey: "test-key",
+        rapidApiHost: "soundcloud-scraper.p.rapidapi.com",
+        fetchImpl: fetchMock as unknown as typeof fetch,
+      }),
+    ).rejects.toThrow("SoundCloud search failed: 503");
+  });
 });
