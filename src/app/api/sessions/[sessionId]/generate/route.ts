@@ -6,27 +6,27 @@ import type { ArtifactRef } from "../../../../../lib/domain/types";
 import { getStores } from "../../../../../lib/server/stores";
 import { validateRouteSessionId } from "../route-helpers";
 
-const demoVideoPath = path.join(process.cwd(), "public", demoOutputFilename);
+const demoAudioPath = path.join(process.cwd(), "public", demoOutputFilename);
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Generation failed";
 }
 
-async function assertDemoVideoExists() {
+async function assertDemoAudioExists() {
   try {
-    await stat(demoVideoPath);
+    await stat(demoAudioPath);
   } catch {
-    throw new Error(`Demo output video missing at public/${demoOutputFilename}`);
+    throw new Error(`Demo output audio missing at public/${demoOutputFilename}`);
   }
 }
 
-function createDemoFinalVideoArtifact(): ArtifactRef {
+function createDemoFinalAudioArtifact(): ArtifactRef {
   return {
-    id: "demo-output-video",
-    kind: "final_video",
+    id: "demo-output-audio",
+    kind: "final_audio",
     filename: demoOutputFilename,
-    contentType: "video/mp4",
-    path: demoVideoPath,
+    contentType: "audio/mpeg",
+    path: demoAudioPath,
     createdAt: new Date().toISOString(),
   };
 }
@@ -54,17 +54,17 @@ export async function POST(
         );
       }
 
-      await assertDemoVideoExists();
-      const finalVideo = createDemoFinalVideoArtifact();
+      await assertDemoAudioExists();
+      const finalAudio = createDemoFinalAudioArtifact();
 
       return {
         status: "ready",
         generationStep: "complete",
         artifacts: [
-          ...latest.artifacts.filter((artifact) => artifact.kind !== "final_video"),
-          finalVideo,
+          ...latest.artifacts.filter((artifact) => artifact.kind !== "final_audio"),
+          finalAudio,
         ],
-        finalVideo,
+        finalVideo: finalAudio,
         error: null,
       };
     });

@@ -18,7 +18,7 @@ export function ExportStep({ session }: ExportStepProps) {
             Export
           </p>
           <h2 id="export-heading" className="mt-2 text-2xl font-semibold text-stone-950">
-            Final video
+            Final audio
           </h2>
         </div>
         {session.finalVideo ? (
@@ -26,18 +26,16 @@ export function ExportStep({ session }: ExportStepProps) {
             href={downloadUrl}
             className="inline-flex h-12 items-center justify-center rounded-md bg-stone-950 px-6 text-sm font-semibold text-white transition hover:bg-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-300"
           >
-            Download MP4
+            Download MP3
           </a>
         ) : null}
       </div>
 
       {session.finalVideo ? (
-        <video
+        <audio
           autoPlay
           controls
-          muted
-          playsInline
-          className="aspect-video w-full rounded-md border border-stone-300 bg-stone-950"
+          className="w-full rounded-md border border-stone-300 bg-white p-4"
           src={demoOutputPublicPath}
         />
       ) : (

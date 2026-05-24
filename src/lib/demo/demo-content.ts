@@ -50,18 +50,18 @@ export const demoStripeInternshipJobs: NormalizedJob[] = [
 ];
 
 export const demoSong: NormalizedTrack = {
-  id: "hotline-bling-drake",
-  title: "Hotline Bling",
-  artist: "Drake",
-  durationMs: 267_000,
+  id: "top-tier",
+  title: "Top Tier",
+  artist: "Capapply",
+  durationMs: 180_000,
   artworkUrl: null,
-  sourceUrl: "https://soundcloud.com/demo/hotline-bling",
+  sourceUrl: "https://example.com/demo/top-tier",
   processability: {
     processable: true,
     reason: "direct_audio_url",
-    audioUrl: "https://example.com/demo/hotline-bling.mp3",
+    audioUrl: "https://example.com/demo/top-tier.mp3",
   },
 };
 
-export const demoOutputFilename = "demo-output.mp4";
+export const demoOutputFilename = "top-tier.mp3";
 export const demoOutputPublicPath = `/${demoOutputFilename}`;

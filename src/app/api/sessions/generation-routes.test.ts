@@ -2,10 +2,9 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createArtifactStore } from "../../../lib/storage/artifacts";
 import { createSessionStore } from "../../../lib/storage/sessions";
-import { GET as downloadVideo } from "./[sessionId]/download/route";
-import { POST as generateVideo } from "./[sessionId]/generate/route";
+import { GET as downloadOutput } from "./[sessionId]/download/route";
+import { POST as generateOutput } from "./[sessionId]/generate/route";
 
 const getStoresMock = vi.hoisted(() => vi.fn());
 
@@ -19,7 +18,6 @@ beforeEach(async () => {
   root = await mkdtemp(path.join(tmpdir(), "capapply-generation-routes-"));
   getStoresMock.mockReturnValue({
     sessions: createSessionStore(root),
-    artifacts: createArtifactStore(root),
   });
 });
 
@@ -34,41 +32,35 @@ function context(sessionId: string) {
 
 async function createSongSelectedSession() {
   const sessions = createSessionStore(root);
-  const artifacts = createArtifactStore(root);
   const session = await sessions.create();
-  const uploadedTrack = await artifacts.putBuffer(session.id, {
-    kind: "uploaded_track",
-    filename: "demo.mp3",
-    contentType: "audio/mpeg",
-    buffer: Buffer.from("fake song"),
-  });
 
   return sessions.update(session.id, {
     status: "song_selected",
     parsedResumeText: "Senior Product Engineer",
-    selectedJob: {
-      id: "job-1",
-      title: "Product Engineer",
-      company: "Example",
-      boardToken: "example",
-      location: "Remote",
-      content: "Build onboarding systems.",
-      absoluteUrl: "https://example.com/job",
-      updatedAt: null,
-    },
     selectedSong: {
-      type: "upload",
-      title: "demo.mp3",
-      artifact: uploadedTrack,
+      type: "soundcloud",
+      track: {
+        id: "top-tier",
+        title: "Top Tier",
+        artist: "Demo",
+        durationMs: 180_000,
+        artworkUrl: null,
+        sourceUrl: "https://example.com/top-tier",
+        processability: {
+          processable: true,
+          reason: "direct_audio_url",
+          audioUrl: "https://example.com/top-tier.mp3",
+        },
+      },
     },
   });
 }
 
 describe("generation and download routes", () => {
-  it("runs mock generation and downloads the final mp4", async () => {
+  it("uses the bundled Top Tier mp3 as the final audio export", async () => {
     const session = await createSongSelectedSession();
 
-    const generateResponse = await generateVideo(
+    const generateResponse = await generateOutput(
       new Request("http://local.test", { method: "POST" }),
       context(session.id),
     );
@@ -77,23 +69,23 @@ describe("generation and download routes", () => {
     const generateBody = await generateResponse.json();
     expect(generateBody.session.status).toBe("ready");
     expect(generateBody.session.finalVideo).toMatchObject({
-      kind: "final_video",
-      filename: "demo-output.mp4",
-      contentType: "video/mp4",
+      kind: "final_audio",
+      filename: "top-tier.mp3",
+      contentType: "audio/mpeg",
     });
     expect(generateBody.session.finalVideo.path).toContain(
-      "public/demo-output.mp4",
+      "public/top-tier.mp3",
     );
 
-    const downloadResponse = await downloadVideo(
+    const downloadResponse = await downloadOutput(
       new Request("http://local.test"),
       context(session.id),
     );
 
     expect(downloadResponse.status).toBe(200);
-    expect(downloadResponse.headers.get("content-type")).toBe("video/mp4");
+    expect(downloadResponse.headers.get("content-type")).toBe("audio/mpeg");
     expect(downloadResponse.headers.get("content-disposition")).toContain(
-      "demo-output.mp4",
+      "top-tier.mp3",
     );
     expect((await downloadResponse.arrayBuffer()).byteLength).toBeGreaterThan(
       1000,
@@ -104,7 +96,7 @@ describe("generation and download routes", () => {
     const sessions = createSessionStore(root);
     const draftSession = await sessions.create();
 
-    const generateResponse = await generateVideo(
+    const generateResponse = await generateOutput(
       new Request("http://local.test", { method: "POST" }),
       context(draftSession.id),
     );
@@ -114,14 +106,14 @@ describe("generation and download routes", () => {
       error: "Generation requires song_selected status, received draft",
     });
 
-    const downloadResponse = await downloadVideo(
+    const downloadResponse = await downloadOutput(
       new Request("http://local.test"),
       context(draftSession.id),
     );
 
     expect(downloadResponse.status).toBe(404);
     expect(await downloadResponse.json()).toEqual({
-      error: "Final video not ready",
+      error: "Final audio not ready",
     });
   });
 });

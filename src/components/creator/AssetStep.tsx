@@ -5,7 +5,7 @@ import type { ArtifactKind, CreationSession } from "@/lib/domain/types";
 
 type RequiredAssetKind = Extract<
   ArtifactKind,
-  "resume" | "voice_sample" | "face_media"
+  "resume" | "voice_sample"
 >;
 
 type AssetStepProps = {
@@ -31,12 +31,6 @@ const fields: Array<{
     label: "Voice sample",
     accept: "audio/*",
     description: "Short spoken clip",
-  },
-  {
-    kind: "face_media",
-    label: "Face media",
-    accept: "image/*,video/*",
-    description: "Clear photo or video",
   },
 ];
 

@@ -6,6 +6,9 @@ import { validateRouteSessionId } from "../route-helpers";
 
 function getStatusAfterUploadTrack(status: CreationStatus): CreationStatus {
   if (status === "song_selected") return "song_selected";
+  if (status === "assets_ready") {
+    throw new Error("Upload track requires job selection");
+  }
   return getNextStatusAfterSongSelection(status);
 }
 

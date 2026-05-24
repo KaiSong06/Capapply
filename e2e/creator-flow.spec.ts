@@ -1,12 +1,12 @@
 import { expect, test } from "@playwright/test";
 import path from "node:path";
 
-test("creates a mock parody export", async ({ page }) => {
+test("creates an audio-only Top Tier export", async ({ page }) => {
   await page.goto("/");
 
   await expect(
     page.getByRole("heading", {
-      name: /create your application parody video/i,
+      name: /create your application parody audio/i,
     }),
   ).toBeVisible();
   await expect(
@@ -21,20 +21,14 @@ test("creates a mock parody export", async ({ page }) => {
     mimeType: "text/plain",
     buffer: Buffer.from("voice sample"),
   });
-  await page.getByLabel(/face media/i).setInputFiles({
-    name: "face.txt",
-    mimeType: "text/plain",
-    buffer: Buffer.from("face media"),
-  });
 
-  await page.getByRole("button", { name: "Stripe", exact: true }).click();
-  await page.getByRole("button", { name: /software engineer intern/i }).click();
-  await page.getByRole("button", { name: /hotline bling/i }).click();
+  await expect(page.getByRole("heading", { name: /choose the song/i })).toBeVisible();
+  await page.getByRole("button", { name: /top tier/i }).click();
 
   await page.getByRole("button", { name: /generate/i }).click();
 
-  await expect(page.getByRole("link", { name: /download mp4/i })).toBeVisible({
+  await expect(page.getByRole("link", { name: /download mp3/i })).toBeVisible({
     timeout: 60_000,
   });
-  await expect(page.locator("video[src='/demo-output.mp4']")).toBeVisible();
+  await expect(page.locator("audio[src='/top-tier.mp3']")).toBeVisible();
 });

@@ -9,13 +9,10 @@ type ProgressStepProps = {
 };
 
 const generationSteps: Array<{ id: GenerationStep; label: string }> = [
-  { id: "parsing_resume", label: "Resume parsed" },
-  { id: "writing_lyrics", label: "Lyrics written" },
-  { id: "separating_instrumental", label: "Instrumental isolated" },
-  { id: "creating_guide_vocal", label: "Guide vocal created" },
-  { id: "converting_voice", label: "Voice converted" },
-  { id: "creating_lipsync_video", label: "Face video created" },
-  { id: "rendering_final_video", label: "Final render" },
+  { id: "parsing_resume", label: "Inputs checked" },
+  { id: "writing_lyrics", label: "Parody scoped" },
+  { id: "creating_guide_vocal", label: "Audio prepared" },
+  { id: "rendering_final_video", label: "MP3 export" },
 ];
 
 function stepIndex(step: GenerationStep): number {
@@ -42,7 +39,7 @@ export function ProgressStep({
             id="generation-heading"
             className="mt-2 text-2xl font-semibold text-stone-950"
           >
-            Generate the video
+            Generate the audio
           </h2>
         </div>
         <button

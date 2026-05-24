@@ -32,6 +32,7 @@ export type ArtifactKind =
   | "converted_vocal"
   | "mixed_audio"
   | "lip_sync_video"
+  | "final_audio"
   | "final_video";
 
 export type ArtifactRef = {

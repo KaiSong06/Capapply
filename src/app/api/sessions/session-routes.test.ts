@@ -178,6 +178,24 @@ describe("session routes", () => {
     expect(await malformed.json()).toEqual({ error: "Track is not processable" });
   });
 
+  it("allows song selection immediately after audio inputs are ready", async () => {
+    const sessions = createSessionStore(root);
+    const session = await sessions.create();
+    await sessions.update(session.id, { status: "assets_ready" });
+
+    const response = await selectSong(
+      jsonRequest({
+        track: processableTrack({ id: "top-tier", title: "Top Tier" }),
+      }),
+      context(session.id),
+    );
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.session.status).toBe("song_selected");
+    expect(body.session.selectedSong.track.title).toBe("Top Tier");
+  });
+
   it("allows repeated job selection from job_selected and replaces selectedJob", async () => {
     const sessions = createSessionStore(root);
     const session = await sessions.create();

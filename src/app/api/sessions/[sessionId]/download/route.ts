@@ -16,7 +16,7 @@ export async function GET(
 
   if (!session?.finalVideo) {
     return NextResponse.json(
-      { error: "Final video not ready" },
+      { error: "Final audio not ready" },
       { status: 404 },
     );
   }
@@ -25,7 +25,7 @@ export async function GET(
 
   return new NextResponse(new Uint8Array(bytes), {
     headers: {
-      "Content-Type": "video/mp4",
+      "Content-Type": session.finalVideo.contentType,
       "Content-Disposition": `attachment; filename="${session.finalVideo.filename}"`,
     },
   });

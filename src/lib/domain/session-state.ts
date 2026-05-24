@@ -2,7 +2,7 @@ import type { CreationStatus } from "./types";
 
 const allowedTransitions: Record<CreationStatus, CreationStatus[]> = {
   draft: ["assets_ready", "failed"],
-  assets_ready: ["job_selected", "failed"],
+  assets_ready: ["job_selected", "song_selected", "failed"],
   job_selected: ["song_selected", "failed"],
   song_selected: ["generating", "failed"],
   generating: ["ready", "failed"],

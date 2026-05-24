@@ -3,43 +3,35 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AssetStep } from "./AssetStep";
 import { ExportStep } from "./ExportStep";
-import { JobStep } from "./JobStep";
 import { ProgressStep } from "./ProgressStep";
 import { SongStep } from "./SongStep";
 import {
   ApiError,
   createSession,
-  getCompanies,
-  getJobs,
-  selectJob,
   selectSong,
   startGeneration,
   uploadAsset,
 } from "@/lib/client/api";
 import type {
   ArtifactKind,
-  CompanyConfig,
   CreationSession,
-  NormalizedJob,
   NormalizedTrack,
 } from "@/lib/domain/types";
 
 type RequiredAssetKind = Extract<
   ArtifactKind,
-  "resume" | "voice_sample" | "face_media"
+  "resume" | "voice_sample"
 >;
 
-type FlowStep = "assets" | "jobs" | "songs" | "generate" | "export";
+type FlowStep = "assets" | "songs" | "generate" | "export";
 
 const requiredAssets: RequiredAssetKind[] = [
   "resume",
   "voice_sample",
-  "face_media",
 ];
 
 const stepLabels: Array<{ id: FlowStep; label: string }> = [
   { id: "assets", label: "Assets" },
-  { id: "jobs", label: "Job" },
   { id: "songs", label: "Song" },
   { id: "generate", label: "Render" },
   { id: "export", label: "Export" },
@@ -66,31 +58,20 @@ function getActiveStep(
   if (isGenerating || session.status === "generating" || session.selectedSong) {
     return "generate";
   }
-  if (session.selectedJob) return "songs";
-  if (assetsComplete) return "jobs";
+  if (assetsComplete) return "songs";
   return "assets";
 }
 
 async function loadFreshSession() {
-  const [nextSession, nextCompanies] = await Promise.all([
-    createSession(),
-    getCompanies(),
-  ]);
-
-  return { nextSession, nextCompanies };
+  return createSession();
 }
 
 export function CreatorFlow() {
   const [session, setSession] = useState<CreationSession | null>(null);
-  const [companies, setCompanies] = useState<CompanyConfig[]>([]);
-  const [activeCompany, setActiveCompany] = useState<string | null>(null);
-  const [jobs, setJobs] = useState<NormalizedJob[]>([]);
   const [booting, setBooting] = useState(true);
   const [busyAsset, setBusyAsset] = useState<RequiredAssetKind | null>(null);
-  const [jobsLoading, setJobsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
-  const [jobsError, setJobsError] = useState<string | null>(null);
 
   const assetsComplete = useAssetCompletion(session);
   const activeStep = getActiveStep(session, assetsComplete, isGenerating);
@@ -98,14 +79,9 @@ export function CreatorFlow() {
   const startNewSession = useCallback(async () => {
     setBooting(true);
     setGlobalError(null);
-    setJobs([]);
-    setJobsError(null);
 
     try {
-      const { nextSession, nextCompanies } = await loadFreshSession();
-      setSession(nextSession);
-      setCompanies(nextCompanies);
-      setActiveCompany(nextCompanies[0]?.boardToken ?? null);
+      setSession(await loadFreshSession());
     } catch (error) {
       setGlobalError(getErrorMessage(error));
     } finally {
@@ -117,11 +93,9 @@ export function CreatorFlow() {
     let cancelled = false;
 
     loadFreshSession()
-      .then(({ nextSession, nextCompanies }) => {
+      .then((nextSession) => {
         if (cancelled) return;
         setSession(nextSession);
-        setCompanies(nextCompanies);
-        setActiveCompany(nextCompanies[0]?.boardToken ?? null);
       })
       .catch((error: unknown) => {
         if (!cancelled) setGlobalError(getErrorMessage(error));
@@ -135,42 +109,6 @@ export function CreatorFlow() {
     };
   }, []);
 
-  useEffect(() => {
-    const companyToken = activeCompany;
-
-    if (!companyToken || !assetsComplete) {
-      return;
-    }
-
-    let cancelled = false;
-
-    async function loadJobs(boardToken: string) {
-      await Promise.resolve();
-      if (cancelled) return;
-
-      setJobsLoading(true);
-      setJobsError(null);
-
-      try {
-        const nextJobs = await getJobs(boardToken);
-        if (!cancelled) setJobs(nextJobs);
-      } catch (error) {
-        if (!cancelled) {
-          setJobs([]);
-          setJobsError(getErrorMessage(error));
-        }
-      } finally {
-        if (!cancelled) setJobsLoading(false);
-      }
-    }
-
-    void loadJobs(companyToken);
-
-    return () => {
-      cancelled = true;
-    };
-  }, [activeCompany, assetsComplete]);
-
   async function handleAssetUpload(kind: RequiredAssetKind, file: File) {
     if (!session) return;
 
@@ -182,17 +120,6 @@ export function CreatorFlow() {
       setGlobalError(getErrorMessage(error));
     } finally {
       setBusyAsset(null);
-    }
-  }
-
-  async function handleSelectJob(job: NormalizedJob) {
-    if (!session) return;
-
-    setGlobalError(null);
-    try {
-      setSession(await selectJob(session.id, job));
-    } catch (error) {
-      setGlobalError(getErrorMessage(error));
     }
   }
 
@@ -233,7 +160,6 @@ export function CreatorFlow() {
 
   const stepReadiness = {
     assets: assetsComplete,
-    jobs: Boolean(session?.selectedJob),
     songs: Boolean(session?.selectedSong),
     generate: session?.status === "ready" || session?.status === "generating",
     export: session?.status === "ready",
@@ -248,7 +174,7 @@ export function CreatorFlow() {
               Capapply
             </p>
             <h1 className="mt-3 max-w-3xl text-4xl font-semibold tracking-normal text-stone-950 sm:text-5xl">
-              Create your application parody video
+              Create your application parody audio
             </h1>
           </div>
           <button
@@ -320,20 +246,6 @@ export function CreatorFlow() {
                     session={session}
                     busyKind={busyAsset}
                     onUpload={handleAssetUpload}
-                  />
-                ) : null}
-
-                {activeStep === "jobs" ? (
-                  <JobStep
-                    companies={companies}
-                    jobs={jobs}
-                    activeCompany={activeCompany}
-                    selectedJob={session.selectedJob}
-                    disabled={!assetsComplete}
-                    isLoading={jobsLoading}
-                    error={jobsError}
-                    onSelectCompany={setActiveCompany}
-                    onSelectJob={handleSelectJob}
                   />
                 ) : null}
 
