@@ -1,0 +1,23 @@
+{
+  "collection": [
+    {
+      "id": 1,
+      "title": "Downloadable Pop Instrumental",
+      "user": { "username": "Beat Maker" },
+      "duration": 24000,
+      "artwork_url": "https://example.com/artwork.jpg",
+      "permalink_url": "https://soundcloud.com/beat-maker/downloadable-pop",
+      "downloadable": true,
+      "download_url": "https://api.soundcloud.com/tracks/1/download"
+    },
+    {
+      "id": 2,
+      "title": "Stream Only Track",
+      "user": { "username": "Uploader" },
+      "duration": 25000,
+      "artwork_url": null,
+      "permalink_url": "https://soundcloud.com/uploader/stream-only",
+      "downloadable": false
+    }
+  ]
+}
