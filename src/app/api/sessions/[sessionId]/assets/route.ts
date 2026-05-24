@@ -12,6 +12,7 @@ const allowedKinds = new Set<ArtifactKind>([
   "voice_sample",
   "face_media",
 ]);
+const invalidAssetUploadState = new Error("Invalid asset upload state");
 
 function getStatusAfterAssetUpload(status: CreationStatus): CreationStatus {
   if (status === "assets_ready") return "assets_ready";
@@ -56,9 +57,16 @@ export async function POST(
 
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  const nextSession = await sessions
-    .updateWith(sessionId, async (current) => {
-      const nextStatus = getStatusAfterAssetUpload(current.status);
+  try {
+    const nextSession = await sessions.updateWith(sessionId, async (current) => {
+      let nextStatus: CreationStatus;
+
+      try {
+        nextStatus = getStatusAfterAssetUpload(current.status);
+      } catch {
+        throw invalidAssetUploadState;
+      }
+
       const artifact = await artifacts.putBuffer(sessionId, {
         kind,
         filename: file.name,
@@ -73,15 +81,17 @@ export async function POST(
           artifact,
         ],
       };
-    })
-    .catch(() => null);
+    });
 
-  if (!nextSession) {
-    return NextResponse.json(
-      { error: "Invalid asset upload state" },
-      { status: 400 },
-    );
+    return NextResponse.json({ session: nextSession });
+  } catch (error) {
+    if (error === invalidAssetUploadState) {
+      return NextResponse.json(
+        { error: "Invalid asset upload state" },
+        { status: 400 },
+      );
+    }
+
+    throw error;
   }
-
-  return NextResponse.json({ session: nextSession });
 }

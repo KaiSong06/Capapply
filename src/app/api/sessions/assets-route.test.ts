@@ -129,6 +129,27 @@ describe("session asset upload route", () => {
     expect(getStoresMock).toHaveBeenCalledTimes(1);
   });
 
+  it("propagates artifact write failures instead of returning invalid state", async () => {
+    const sessions = createSessionStore(root);
+    const session = await sessions.create();
+    const putFailure = new Error("artifact write failed");
+
+    getStoresMock.mockReturnValue({
+      sessions,
+      artifacts: {
+        putBuffer: vi.fn(async () => {
+          throw putFailure;
+        }),
+      },
+    });
+
+    await expect(
+      POST(requestWithAsset("resume", "resume.txt", "resume"), {
+        params: Promise.resolve({ sessionId: session.id }),
+      }),
+    ).rejects.toThrow(putFailure);
+  });
+
   it("does not write an artifact when the latest session state no longer accepts assets", async () => {
     const realSessions = createSessionStore(root);
     const session = await realSessions.create();
