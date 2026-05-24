@@ -11,12 +11,10 @@ import {
   createSession,
   getCompanies,
   getJobs,
-  searchTracks,
   selectJob,
   selectSong,
   startGeneration,
   uploadAsset,
-  uploadTrack,
 } from "@/lib/client/api";
 import type {
   ArtifactKind,
@@ -87,17 +85,12 @@ export function CreatorFlow() {
   const [companies, setCompanies] = useState<CompanyConfig[]>([]);
   const [activeCompany, setActiveCompany] = useState<string | null>(null);
   const [jobs, setJobs] = useState<NormalizedJob[]>([]);
-  const [tracks, setTracks] = useState<NormalizedTrack[]>([]);
-  const [trackQuery, setTrackQuery] = useState("");
   const [booting, setBooting] = useState(true);
   const [busyAsset, setBusyAsset] = useState<RequiredAssetKind | null>(null);
   const [jobsLoading, setJobsLoading] = useState(false);
-  const [tracksLoading, setTracksLoading] = useState(false);
-  const [trackUploading, setTrackUploading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [jobsError, setJobsError] = useState<string | null>(null);
-  const [tracksError, setTracksError] = useState<string | null>(null);
 
   const assetsComplete = useAssetCompletion(session);
   const activeStep = getActiveStep(session, assetsComplete, isGenerating);
@@ -106,10 +99,7 @@ export function CreatorFlow() {
     setBooting(true);
     setGlobalError(null);
     setJobs([]);
-    setTracks([]);
-    setTrackQuery("");
     setJobsError(null);
-    setTracksError(null);
 
     try {
       const { nextSession, nextCompanies } = await loadFreshSession();
@@ -206,27 +196,6 @@ export function CreatorFlow() {
     }
   }
 
-  async function handleSearchTracks() {
-    const query = trackQuery.trim();
-    if (!query) return;
-
-    setTracksLoading(true);
-    setTracksError(null);
-
-    try {
-      const nextTracks = await searchTracks(query);
-      setTracks(nextTracks);
-      if (nextTracks.length === 0) {
-        setTracksError("No matching tracks returned. Upload a song file instead.");
-      }
-    } catch {
-      setTracks([]);
-      setTracksError("SoundCloud search is unavailable. Upload a song file instead.");
-    } finally {
-      setTracksLoading(false);
-    }
-  }
-
   async function handleSelectTrack(track: NormalizedTrack) {
     if (!session) return;
 
@@ -235,20 +204,6 @@ export function CreatorFlow() {
       setSession(await selectSong(session.id, track));
     } catch (error) {
       setGlobalError(getErrorMessage(error));
-    }
-  }
-
-  async function handleUploadTrack(file: File) {
-    if (!session) return;
-
-    setTrackUploading(true);
-    setTracksError(null);
-    try {
-      setSession(await uploadTrack(session.id, file));
-    } catch (error) {
-      setTracksError(getErrorMessage(error));
-    } finally {
-      setTrackUploading(false);
     }
   }
 
@@ -385,15 +340,7 @@ export function CreatorFlow() {
                 {activeStep === "songs" ? (
                   <SongStep
                     session={session}
-                    query={trackQuery}
-                    tracks={tracks}
-                    isSearching={tracksLoading}
-                    isUploading={trackUploading}
-                    error={tracksError}
-                    onQueryChange={setTrackQuery}
-                    onSearch={handleSearchTracks}
                     onSelectTrack={handleSelectTrack}
-                    onUploadTrack={handleUploadTrack}
                   />
                 ) : null}
 

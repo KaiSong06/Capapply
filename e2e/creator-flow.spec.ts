@@ -2,58 +2,6 @@ import { expect, test } from "@playwright/test";
 import path from "node:path";
 
 test("creates a mock parody export", async ({ page }) => {
-  await page.route("**/api/companies", async (route) => {
-    await route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({
-        companies: [{ company: "Stripe", boardToken: "stripe" }],
-      }),
-    });
-  });
-
-  await page.route("**/api/companies/stripe/jobs", async (route) => {
-    await route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({
-        jobs: [
-          {
-            id: "job-1",
-            title: "Product Engineer",
-            company: "Stripe",
-            boardToken: "stripe",
-            location: "New York, NY",
-            content: "Build payment products and developer workflows.",
-            absoluteUrl: "https://boards.greenhouse.io/stripe/jobs/job-1",
-            updatedAt: null,
-          },
-        ],
-      }),
-    });
-  });
-
-  await page.route("**/api/soundcloud/search**", async (route) => {
-    await route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({
-        tracks: [
-          {
-            id: "track-1",
-            title: "Downloadable Pop Instrumental",
-            artist: "Beat Maker",
-            durationMs: 24000,
-            artworkUrl: null,
-            sourceUrl: "https://soundcloud.com/beat-maker/downloadable-pop",
-            processability: {
-              processable: true,
-              reason: "downloadable",
-              audioUrl: "https://api.soundcloud.com/tracks/1/download",
-            },
-          },
-        ],
-      }),
-    });
-  });
-
   await page.goto("/");
 
   await expect(
@@ -80,17 +28,13 @@ test("creates a mock parody export", async ({ page }) => {
   });
 
   await page.getByRole("button", { name: "Stripe", exact: true }).click();
-  await page.getByRole("button", { name: /product engineer/i }).click();
-
-  await page
-    .getByRole("textbox", { name: /search soundcloud/i })
-    .fill("pop instrumental");
-  await page.getByRole("button", { name: /^search$/i }).click();
-  await page.getByRole("button", { name: /downloadable pop instrumental/i }).click();
+  await page.getByRole("button", { name: /software engineer intern/i }).click();
+  await page.getByRole("button", { name: /hotline bling/i }).click();
 
   await page.getByRole("button", { name: /generate/i }).click();
 
   await expect(page.getByRole("link", { name: /download mp4/i })).toBeVisible({
     timeout: 60_000,
   });
+  await expect(page.locator("video[src='/demo-output.mp4']")).toBeVisible();
 });

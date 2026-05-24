@@ -76,7 +76,14 @@ describe("generation and download routes", () => {
     expect(generateResponse.status).toBe(200);
     const generateBody = await generateResponse.json();
     expect(generateBody.session.status).toBe("ready");
-    expect(generateBody.session.finalVideo.kind).toBe("final_video");
+    expect(generateBody.session.finalVideo).toMatchObject({
+      kind: "final_video",
+      filename: "demo-output.mp4",
+      contentType: "video/mp4",
+    });
+    expect(generateBody.session.finalVideo.path).toContain(
+      "public/demo-output.mp4",
+    );
 
     const downloadResponse = await downloadVideo(
       new Request("http://local.test"),
@@ -86,7 +93,7 @@ describe("generation and download routes", () => {
     expect(downloadResponse.status).toBe(200);
     expect(downloadResponse.headers.get("content-type")).toBe("video/mp4");
     expect(downloadResponse.headers.get("content-disposition")).toContain(
-      "capapply-demo.mp4",
+      "demo-output.mp4",
     );
     expect((await downloadResponse.arrayBuffer()).byteLength).toBeGreaterThan(
       1000,

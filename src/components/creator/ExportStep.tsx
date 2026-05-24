@@ -1,5 +1,6 @@
 "use client";
 
+import { demoOutputPublicPath } from "@/lib/demo/demo-content";
 import type { CreationSession } from "@/lib/domain/types";
 
 type ExportStepProps = {
@@ -32,9 +33,12 @@ export function ExportStep({ session }: ExportStepProps) {
 
       {session.finalVideo ? (
         <video
+          autoPlay
           controls
+          muted
+          playsInline
           className="aspect-video w-full rounded-md border border-stone-300 bg-stone-950"
-          src={downloadUrl}
+          src={demoOutputPublicPath}
         />
       ) : (
         <div className="rounded-md border border-stone-200 bg-white p-5 text-sm text-stone-600">

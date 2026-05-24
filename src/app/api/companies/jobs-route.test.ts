@@ -1,12 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fetchGreenhouseJobs } from "../../../lib/adapters/greenhouse";
+import { describe, expect, it } from "vitest";
 import { GET } from "./[boardToken]/jobs/route";
-
-vi.mock("../../../lib/adapters/greenhouse", () => ({
-  fetchGreenhouseJobs: vi.fn(),
-}));
-
-const fetchGreenhouseJobsMock = vi.mocked(fetchGreenhouseJobs);
 
 function callRoute(boardToken: string) {
   return GET(new Request("http://localhost/api/companies/test/jobs"), {
@@ -15,8 +8,28 @@ function callRoute(boardToken: string) {
 }
 
 describe("company jobs route", () => {
-  beforeEach(() => {
-    fetchGreenhouseJobsMock.mockReset();
+  it("returns hard-coded Stripe internship postings without Greenhouse", async () => {
+    const response = await callRoute("stripe");
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.jobs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: "Software Engineer Intern",
+          company: "Stripe",
+          boardToken: "stripe",
+        }),
+        expect.objectContaining({
+          title: "Product Manager Intern",
+          company: "Stripe",
+          boardToken: "stripe",
+        }),
+      ]),
+    );
+    expect(body.jobs.every((job: { title: string }) => job.title.includes("Intern"))).toBe(
+      true,
+    );
   });
 
   it("returns 404 for an unknown board token", async () => {
@@ -24,15 +37,5 @@ describe("company jobs route", () => {
 
     expect(response.status).toBe(404);
     await expect(response.json()).resolves.toEqual({ error: "Unknown company" });
-    expect(fetchGreenhouseJobsMock).not.toHaveBeenCalled();
-  });
-
-  it("returns 502 when Greenhouse jobs cannot be fetched", async () => {
-    fetchGreenhouseJobsMock.mockRejectedValue(new Error("provider unavailable"));
-
-    const response = await callRoute("stripe");
-
-    expect(response.status).toBe(502);
-    await expect(response.json()).resolves.toEqual({ error: "Unable to fetch jobs" });
   });
 });
