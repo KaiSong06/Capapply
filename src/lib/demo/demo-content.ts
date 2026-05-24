@@ -63,5 +63,74 @@ export const demoSong: NormalizedTrack = {
   },
 };
 
+export const demoSongOptions: NormalizedTrack[] = [
+  demoSong,
+  {
+    id: "midnight-invoice",
+    title: "Midnight Invoice",
+    artist: "Ledger Line",
+    durationMs: 196_000,
+    artworkUrl: null,
+    sourceUrl: "https://example.com/demo/midnight-invoice",
+    processability: {
+      processable: true,
+      reason: "direct_audio_url",
+      audioUrl: "https://example.com/demo/midnight-invoice.mp3",
+    },
+  },
+  {
+    id: "promotion-season",
+    title: "Promotion Season",
+    artist: "Offer Stack",
+    durationMs: 212_000,
+    artworkUrl: null,
+    sourceUrl: "https://example.com/demo/promotion-season",
+    processability: {
+      processable: true,
+      reason: "direct_audio_url",
+      audioUrl: "https://example.com/demo/promotion-season.mp3",
+    },
+  },
+  {
+    id: "final-round",
+    title: "Final Round",
+    artist: "Callback Club",
+    durationMs: 188_000,
+    artworkUrl: null,
+    sourceUrl: "https://example.com/demo/final-round",
+    processability: {
+      processable: true,
+      reason: "direct_audio_url",
+      audioUrl: "https://example.com/demo/final-round.mp3",
+    },
+  },
+  {
+    id: "equity-wave",
+    title: "Equity Wave",
+    artist: "Term Sheet",
+    durationMs: 204_000,
+    artworkUrl: null,
+    sourceUrl: "https://example.com/demo/equity-wave",
+    processability: {
+      processable: true,
+      reason: "direct_audio_url",
+      audioUrl: "https://example.com/demo/equity-wave.mp3",
+    },
+  },
+  {
+    id: "offer-letter",
+    title: "Offer Letter",
+    artist: "Hiring Loop",
+    durationMs: 176_000,
+    artworkUrl: null,
+    sourceUrl: "https://example.com/demo/offer-letter",
+    processability: {
+      processable: true,
+      reason: "direct_audio_url",
+      audioUrl: "https://example.com/demo/offer-letter.mp3",
+    },
+  },
+];
+
 export const demoOutputFilename = "top-tier.mp3";
 export const demoOutputPublicPath = `/${demoOutputFilename}`;

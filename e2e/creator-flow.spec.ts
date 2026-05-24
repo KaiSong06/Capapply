@@ -22,7 +22,12 @@ test("creates an audio-only Top Tier export", async ({ page }) => {
     buffer: Buffer.from("voice sample"),
   });
 
+  const songSection = page.locator("section[aria-labelledby='songs-heading']");
   await expect(page.getByRole("heading", { name: /choose the song/i })).toBeVisible();
+  await expect(songSection.getByText("Song", { exact: true })).toBeVisible();
+  await expect(page.getByText("Demo song", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /midnight invoice/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /promotion season/i })).toBeVisible();
   await page.getByRole("button", { name: /top tier/i }).click();
 
   await page.getByRole("button", { name: /generate/i }).click();
