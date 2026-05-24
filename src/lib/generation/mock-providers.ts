@@ -1,19 +1,36 @@
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import type { ArtifactRef, CreationSession } from "../domain/types";
 import type { ArtifactStore, GenerationProviders } from "./contracts";
+import {
+  createSilentAudio,
+  createSolidVideo,
+  renderFinalMp4,
+} from "./ffmpeg-renderer";
 
-async function putTextArtifact(
-  artifacts: ArtifactStore,
-  sessionId: string,
-  kind: ArtifactRef["kind"],
-  filename: string,
-  text: string,
-): Promise<ArtifactRef> {
-  return artifacts.putBuffer(sessionId, {
-    kind,
-    filename,
-    contentType: "text/plain",
-    buffer: Buffer.from(text),
-  });
+async function putGeneratedFile(input: {
+  artifacts: ArtifactStore;
+  sessionId: string;
+  kind: ArtifactRef["kind"];
+  filename: string;
+  contentType: string;
+  build(filePath: string): Promise<void>;
+}): Promise<ArtifactRef> {
+  const dir = await mkdtemp(path.join(tmpdir(), "capapply-mock-media-"));
+  const filePath = path.join(dir, input.filename);
+
+  try {
+    await input.build(filePath);
+    return input.artifacts.putBuffer(input.sessionId, {
+      kind: input.kind,
+      filename: input.filename,
+      contentType: input.contentType,
+      buffer: await readFile(filePath),
+    });
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 }
 
 export function createMockProviders(): GenerationProviders {
@@ -27,50 +44,60 @@ export function createMockProviders(): GenerationProviders {
     },
 
     async separateInstrumental(session, artifacts) {
-      return putTextArtifact(
+      return putGeneratedFile({
         artifacts,
-        session.id,
-        "instrumental_track",
-        "instrumental.txt",
-        "mock instrumental",
-      );
-    },
-
-    async createGuideVocal(session, _lyrics, artifacts) {
-      return putTextArtifact(
-        artifacts,
-        session.id,
-        "guide_vocal",
-        "guide-vocal.txt",
-        "mock guide vocal",
-      );
-    },
-
-    async convertVoice(session, _guideVocal, artifacts) {
-      return putTextArtifact(
-        artifacts,
-        session.id,
-        "converted_vocal",
-        "converted-vocal.txt",
-        "mock converted vocal",
-      );
-    },
-
-    async createLipSyncVideo(session, _convertedVocal, artifacts) {
-      return artifacts.putBuffer(session.id, {
-        kind: "lip_sync_video",
-        filename: "lip-sync.mp4",
-        contentType: "video/mp4",
-        buffer: Buffer.from("mock lip sync video"),
+        sessionId: session.id,
+        kind: "instrumental_track",
+        filename: "instrumental.m4a",
+        contentType: "audio/mp4",
+        build: (filePath) => createSilentAudio(filePath, 3),
       });
     },
 
-    async renderFinalVideo(session, _lipSyncVideo, _convertedVocal, artifacts) {
+    async createGuideVocal(session, _lyrics, artifacts) {
+      return putGeneratedFile({
+        artifacts,
+        sessionId: session.id,
+        kind: "guide_vocal",
+        filename: "guide-vocal.m4a",
+        contentType: "audio/mp4",
+        build: (filePath) => createSilentAudio(filePath, 3),
+      });
+    },
+
+    async convertVoice(session, guideVocal, artifacts) {
       return artifacts.putBuffer(session.id, {
+        kind: "converted_vocal",
+        filename: "converted-vocal.m4a",
+        contentType: "audio/mp4",
+        buffer: await readFile(guideVocal.path),
+      });
+    },
+
+    async createLipSyncVideo(session, _convertedVocal, artifacts) {
+      return putGeneratedFile({
+        artifacts,
+        sessionId: session.id,
+        kind: "lip_sync_video",
+        filename: "lip-sync.mp4",
+        contentType: "video/mp4",
+        build: (filePath) => createSolidVideo(filePath, 3),
+      });
+    },
+
+    async renderFinalVideo(session, lipSyncVideo, convertedVocal, artifacts) {
+      return putGeneratedFile({
+        artifacts,
+        sessionId: session.id,
         kind: "final_video",
         filename: "capapply-demo.mp4",
         contentType: "video/mp4",
-        buffer: Buffer.from("mock final video"),
+        build: (filePath) =>
+          renderFinalMp4({
+            videoPath: lipSyncVideo.path,
+            audioPath: convertedVocal.path,
+            outputPath: filePath,
+          }),
       });
     },
   };
