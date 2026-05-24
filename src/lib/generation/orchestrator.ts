@@ -4,6 +4,8 @@ import type {
   GenerationStep,
 } from "../domain/types";
 import type { createSessionStore } from "../storage/sessions";
+import type { HardwareController } from "../hardware/contracts";
+import { resolvePlaybackArtifact } from "../hardware/contracts";
 import type { ArtifactStore, GenerationProviders } from "./contracts";
 
 type SessionStore = ReturnType<typeof createSessionStore>;
@@ -17,8 +19,9 @@ export async function runGeneration(input: {
   sessions: SessionStore;
   artifacts: ArtifactStore;
   providers: GenerationProviders;
+  hardware: HardwareController;
 }): Promise<CreationSession> {
-  const { session, sessions, artifacts, providers } = input;
+  const { session, sessions, artifacts, providers, hardware } = input;
 
   let current = await sessions.updateWith(session.id, (latest) => {
     if (latest.status !== "song_selected") {
@@ -114,11 +117,34 @@ export async function runGeneration(input: {
       convertedVocal,
       artifacts,
     );
+    current = await appendArtifacts(
+      current.id,
+      [finalVideo],
+      "playing_on_device",
+    );
+
+    const playbackArtifact = resolvePlaybackArtifact(
+      current,
+      current.artifacts,
+    );
+    if (!playbackArtifact) {
+      throw new Error("No audio artifact available for device playback");
+    }
+
+    await hardware.playSong({
+      sessionId: current.id,
+      artifact: playbackArtifact,
+    });
+
+    current = await sessions.updateWith(current.id, (latest) => ({
+      generationStep: "moving_motor",
+    }));
+
+    await hardware.moveMotor();
 
     return sessions.updateWith(current.id, (latest) => ({
       status: "ready",
       generationStep: "complete",
-      artifacts: [...latest.artifacts, finalVideo],
       finalVideo,
       error: null,
     }));

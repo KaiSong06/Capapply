@@ -22,12 +22,21 @@ const envSchema = z.object({
   LIPSYNC_CREATE_URL: optionalUrl,
   LIPSYNC_STATUS_URL: optionalUrl,
   LIPSYNC_API_KEY: optionalString,
+  HARDWARE_MODE: z.enum(["mock", "raspberry"]).default("mock"),
+  RASPBERRY_PI_URL: optionalUrl,
+  MOTOR_MOVE_MS: z.coerce.number().int().positive().default(2000),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;
 
 export function readEnv(raw: NodeJS.ProcessEnv = process.env): AppEnv {
   const env = envSchema.parse(raw);
+
+  if (env.HARDWARE_MODE === "raspberry" && !env.RASPBERRY_PI_URL) {
+    throw new Error(
+      "RASPBERRY_PI_URL is required when HARDWARE_MODE is raspberry",
+    );
+  }
 
   if (env.MEDIA_PROVIDER_MODE === "real") {
     const missing = [

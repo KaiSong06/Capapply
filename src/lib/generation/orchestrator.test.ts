@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { CreationSession } from "../domain/types";
 import { createArtifactStore } from "../storage/artifacts";
 import { createSessionStore } from "../storage/sessions";
+import { createMockHardwareController } from "../hardware/mock-controller";
 import { createMockProviders } from "./mock-providers";
 import { runGeneration } from "./orchestrator";
 
@@ -60,14 +61,21 @@ describe("generation orchestrator", () => {
     const { sessions, artifacts, session: readySession } =
       await createSongSelectedSession();
 
+    const hardware = createMockHardwareController();
     const result = await runGeneration({
       session: readySession,
       sessions,
       artifacts,
       providers: createMockProviders(),
+      hardware,
     });
 
     expect(result.status).toBe("ready");
+    expect(result.generationStep).toBe("complete");
+    expect(hardware.calls.map((call) => call.type)).toEqual([
+      "playSong",
+      "moveMotor",
+    ]);
     expect(result.finalVideo?.kind).toBe("final_video");
     expect(result.artifacts.map((artifact) => artifact.kind)).toContain(
       "lyrics",
@@ -87,7 +95,13 @@ describe("generation orchestrator", () => {
     };
 
     await expect(
-      runGeneration({ session, sessions, artifacts, providers }),
+      runGeneration({
+        session,
+        sessions,
+        artifacts,
+        providers,
+        hardware: createMockHardwareController(),
+      }),
     ).rejects.toThrow("voice conversion failed");
 
     const failedSession = await sessions.get(session.id);
@@ -113,6 +127,7 @@ describe("generation orchestrator", () => {
         sessions,
         artifacts,
         providers: createMockProviders(),
+        hardware: createMockHardwareController(),
       }),
     ).rejects.toThrow(
       "Generation requires song_selected status, received generating",
@@ -133,6 +148,7 @@ describe("generation orchestrator", () => {
       session,
       sessions,
       artifacts,
+      hardware: createMockHardwareController(),
       providers: {
         ...providers,
         async separateInstrumental(current, artifactStore) {

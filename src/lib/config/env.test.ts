@@ -18,4 +18,10 @@ describe("readEnv", () => {
       "Missing real media provider env",
     );
   });
+
+  it("requires raspberry pi url when hardware mode is raspberry", () => {
+    expect(() => readEnv({ HARDWARE_MODE: "raspberry" })).toThrow(
+      "RASPBERRY_PI_URL is required when HARDWARE_MODE is raspberry",
+    );
+  });
 });

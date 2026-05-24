@@ -17,6 +17,8 @@ export type GenerationStep =
   | "converting_voice"
   | "creating_lipsync_video"
   | "rendering_final_video"
+  | "playing_on_device"
+  | "moving_motor"
   | "complete";
 
 export type ArtifactKind =
