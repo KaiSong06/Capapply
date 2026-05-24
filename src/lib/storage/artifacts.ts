@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { ArtifactKind, ArtifactRef } from "@/lib/domain/types";
+import { assertSafeSessionId } from "./sessions";
 
 export type PutArtifactInput = {
   kind: ArtifactKind;
@@ -18,7 +19,12 @@ export function createArtifactStore(root: string) {
     ): Promise<ArtifactRef> {
       const id = randomUUID();
       const safeName = input.filename.replace(/[^a-zA-Z0-9._-]/g, "_");
-      const dir = path.join(root, "sessions", sessionId, "artifacts");
+      const dir = path.join(
+        root,
+        "sessions",
+        assertSafeSessionId(sessionId),
+        "artifacts",
+      );
       const filePath = path.join(dir, `${id}-${safeName}`);
 
       await mkdir(dir, { recursive: true });

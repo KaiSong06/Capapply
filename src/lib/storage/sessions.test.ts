@@ -15,6 +15,8 @@ afterEach(async () => {
 });
 
 describe("session store", () => {
+  const missingSessionId = "00000000-0000-4000-8000-000000000000";
+
   it("creates, reads, and updates a session", async () => {
     const store = createSessionStore(root);
     const session = await store.create();
@@ -28,5 +30,37 @@ describe("session store", () => {
     const found = await store.get(session.id);
     expect(found?.id).toBe(session.id);
     expect(found?.status).toBe("assets_ready");
+  });
+
+  it("returns null for a missing valid session id", async () => {
+    const store = createSessionStore(root);
+
+    await expect(store.get(missingSessionId)).resolves.toBeNull();
+  });
+
+  it("rejects updates for a missing valid session id", async () => {
+    const store = createSessionStore(root);
+
+    await expect(
+      store.update(missingSessionId, { status: "assets_ready" }),
+    ).rejects.toThrow(`Session not found: ${missingSessionId}`);
+  });
+
+  it("updates after destructuring the update function", async () => {
+    const store = createSessionStore(root);
+    const session = await store.create();
+    const { update } = store;
+
+    const updated = await update(session.id, { status: "assets_ready" });
+
+    expect(updated.status).toBe("assets_ready");
+  });
+
+  it("rejects unsafe session ids", async () => {
+    const store = createSessionStore(root);
+
+    await expect(store.get("../escape")).rejects.toThrow(
+      "Invalid session id: ../escape",
+    );
   });
 });

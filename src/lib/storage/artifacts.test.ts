@@ -15,9 +15,11 @@ afterEach(async () => {
 });
 
 describe("artifact store", () => {
+  const sessionId = "00000000-0000-4000-8000-000000000000";
+
   it("stores a session artifact on disk", async () => {
     const store = createArtifactStore(root);
-    const artifact = await store.putBuffer("session-1", {
+    const artifact = await store.putBuffer(sessionId, {
       kind: "resume",
       filename: "resume.txt",
       contentType: "text/plain",
@@ -29,5 +31,32 @@ describe("artifact store", () => {
     expect(await readFile(artifact.path, "utf8")).toBe(
       "Senior product engineer",
     );
+  });
+
+  it("rejects unsafe session ids", async () => {
+    const store = createArtifactStore(root);
+
+    await expect(
+      store.putBuffer("../escape", {
+        kind: "resume",
+        filename: "resume.txt",
+        contentType: "text/plain",
+        buffer: Buffer.from("Senior product engineer"),
+      }),
+    ).rejects.toThrow("Invalid session id: ../escape");
+  });
+
+  it("sanitizes artifact paths while preserving the original filename", async () => {
+    const store = createArtifactStore(root);
+
+    const artifact = await store.putBuffer(sessionId, {
+      kind: "resume",
+      filename: "my resume?.txt",
+      contentType: "text/plain",
+      buffer: Buffer.from("Senior product engineer"),
+    });
+
+    expect(path.basename(artifact.path)).toMatch(/my_resume_\.txt$/);
+    expect(artifact.filename).toBe("my resume?.txt");
   });
 });

@@ -5,8 +5,22 @@ import type { CreationSession } from "@/lib/domain/types";
 
 export type SessionPatch = Partial<Omit<CreationSession, "id" | "createdAt">>;
 
+const sessionIdPattern = /^[a-f0-9-]{36}$/i;
+
+export function assertSafeSessionId(sessionId: string): string {
+  if (!sessionIdPattern.test(sessionId)) {
+    throw new Error(`Invalid session id: ${sessionId}`);
+  }
+  return sessionId;
+}
+
 function sessionPath(root: string, sessionId: string): string {
-  return path.join(root, "sessions", sessionId, "session.json");
+  return path.join(
+    root,
+    "sessions",
+    assertSafeSessionId(sessionId),
+    "session.json",
+  );
 }
 
 function createEmptySession(): CreationSession {
@@ -36,33 +50,37 @@ export function createSessionStore(root: string) {
     return session;
   }
 
+  async function create(): Promise<CreationSession> {
+    return save(createEmptySession());
+  }
+
+  async function get(sessionId: string): Promise<CreationSession | null> {
+    try {
+      const raw = await readFile(sessionPath(root, sessionId), "utf8");
+      return JSON.parse(raw) as CreationSession;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+      throw error;
+    }
+  }
+
+  async function update(
+    sessionId: string,
+    patch: SessionPatch,
+  ): Promise<CreationSession> {
+    const current = await get(sessionId);
+    if (!current) throw new Error(`Session not found: ${sessionId}`);
+
+    return save({
+      ...current,
+      ...patch,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
   return {
-    async create(): Promise<CreationSession> {
-      return save(createEmptySession());
-    },
-
-    async get(sessionId: string): Promise<CreationSession | null> {
-      try {
-        const raw = await readFile(sessionPath(root, sessionId), "utf8");
-        return JSON.parse(raw) as CreationSession;
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
-        throw error;
-      }
-    },
-
-    async update(
-      sessionId: string,
-      patch: SessionPatch,
-    ): Promise<CreationSession> {
-      const current = await this.get(sessionId);
-      if (!current) throw new Error(`Session not found: ${sessionId}`);
-
-      return save({
-        ...current,
-        ...patch,
-        updatedAt: new Date().toISOString(),
-      });
-    },
+    create,
+    get,
+    update,
   };
 }
