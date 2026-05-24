@@ -7,6 +7,7 @@ const optionalUrl = z.preprocess(emptyStringToUndefined, z.string().url().option
 const envSchema = z.object({
   ARTIFACT_ROOT: z.string().default("var/capapply"),
   MEDIA_PROVIDER_MODE: z.enum(["mock", "real"]).default("mock"),
+  ELEVENLABS_AUDIO_MODE: z.enum(["mock", "real"]).default("mock"),
   RAPIDAPI_KEY: optionalString,
   SOUNDCLOUD_SEARCH_URL: z
     .string()
@@ -42,6 +43,19 @@ export function readEnv(raw: NodeJS.ProcessEnv = process.env): AppEnv {
 
     if (missing.length > 0) {
       throw new Error(`Missing real media provider env: ${missing.map(([key]) => key).join(", ")}`);
+    }
+  }
+
+  if (env.ELEVENLABS_AUDIO_MODE === "real") {
+    const missing = [
+      ["ELEVENLABS_API_KEY", env.ELEVENLABS_API_KEY],
+      ["ELEVENLABS_VOICE_ID", env.ELEVENLABS_VOICE_ID],
+    ].filter(([, value]) => !value);
+
+    if (missing.length > 0) {
+      throw new Error(
+        `Missing ElevenLabs audio env: ${missing.map(([key]) => key).join(", ")}`,
+      );
     }
   }
 

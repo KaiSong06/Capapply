@@ -7,8 +7,12 @@ export default defineConfig([
   ...nextTs,
   globalIgnores([
     ".next/**",
+    ".worktrees/**",
     "out/**",
     "build/**",
+    "playwright-report/**",
+    "test-results/**",
+    "var/**",
     "next-env.d.ts",
   ]),
 ]);

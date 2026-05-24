@@ -1,5 +1,7 @@
+import { readFile } from "node:fs/promises";
+import type { ArtifactRef, CreationSession } from "../domain/types";
 import { readEnv } from "../config/env";
-import type { GenerationProviders } from "./contracts";
+import type { ArtifactStore, GenerationProviders } from "./contracts";
 import { createMockProviders } from "./mock-providers";
 import {
   convertVoiceWithElevenLabs,
@@ -17,14 +19,44 @@ function requireEnv(name: string, value: string | undefined): string {
   return value;
 }
 
+async function copyGuideVocalAsConvertedVocal(
+  session: CreationSession,
+  guideVocal: ArtifactRef,
+  artifacts: ArtifactStore,
+): Promise<ArtifactRef> {
+  return artifacts.putBuffer(session.id, {
+    kind: "converted_vocal",
+    filename: "converted-vocal.mp3",
+    contentType: "audio/mpeg",
+    buffer: await readFile(guideVocal.path),
+  });
+}
+
 export function createGenerationProviders(): GenerationProviders {
   const env = readEnv();
+  const mockProviders = createMockProviders();
 
   if (env.MEDIA_PROVIDER_MODE === "mock") {
-    return createMockProviders();
-  }
+    if (env.ELEVENLABS_AUDIO_MODE === "mock") {
+      return mockProviders;
+    }
 
-  const mockProviders = createMockProviders();
+    return {
+      ...mockProviders,
+      async createGuideVocal(session, lyrics, artifacts) {
+        return createGuideVocalWithElevenLabs({
+          session,
+          lyrics,
+          artifacts,
+          apiKey: requireEnv("ELEVENLABS_API_KEY", env.ELEVENLABS_API_KEY),
+          voiceId: requireEnv("ELEVENLABS_VOICE_ID", env.ELEVENLABS_VOICE_ID),
+        });
+      },
+      async convertVoice(session, guideVocal, artifacts) {
+        return copyGuideVocalAsConvertedVocal(session, guideVocal, artifacts);
+      },
+    };
+  }
 
   return {
     async generateLyrics(session) {
