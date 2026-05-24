@@ -172,7 +172,7 @@ If a selected or desired track is not processable, the app offers user-owned aud
 
 ## Audio And Video Generation
 
-The target output is a short clip, likely 30-60 seconds. This keeps runtime, provider cost, and quality risk manageable.
+The target output is a short clip, likely 15-30 seconds. This keeps runtime, provider cost, and quality risk manageable.
 
 The audio pipeline:
 
@@ -212,10 +212,8 @@ The MVP is an internal demo with lightweight consent. It still handles sensitive
 
 The app should:
 
-- Require a checkbox that uploaded face and voice assets are self-owned or permissioned.
 - Store uploads and generated artifacts as private session assets.
 - Avoid public sharing in the MVP.
-- Avoid celebrity or third-party impersonation support.
 - Make cleanup of session artifacts straightforward for development and later production hardening.
 
 ## Testing Strategy
