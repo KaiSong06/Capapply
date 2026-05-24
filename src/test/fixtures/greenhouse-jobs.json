@@ -1,0 +1,13 @@
+{
+  "jobs": [
+    {
+      "id": 123,
+      "title": "Product Engineer",
+      "updated_at": "2026-05-01T12:00:00Z",
+      "location": { "name": "New York, NY" },
+      "absolute_url": "https://boards.greenhouse.io/example/jobs/123",
+      "content": "Build useful product features for customers."
+    }
+  ],
+  "meta": { "total": 1 }
+}
