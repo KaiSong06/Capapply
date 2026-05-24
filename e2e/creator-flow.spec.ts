@@ -28,7 +28,7 @@ test("creates an audio-only cha cha export", async ({ page }) => {
   await expect(page.getByText("Demo song", { exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /midnight invoice/i })).toBeVisible();
   await expect(page.getByRole("button", { name: /promotion season/i })).toBeVisible();
-  await page.getByRole("button", { name: /cha cha -d\.r\.a\.m/i }).click();
+  await page.getByRole("button", { name: /cha cha/i }).click();
 
   await page.getByRole("button", { name: /generate/i }).click();
 
