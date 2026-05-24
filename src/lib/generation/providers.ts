@@ -107,11 +107,18 @@ export function createGenerationProviders(): GenerationProviders {
       });
     },
 
-    async renderFinalVideo(session, lipSyncVideo, convertedVocal, artifacts) {
+    async renderFinalVideo(
+      session,
+      lipSyncVideo,
+      convertedVocal,
+      backingTrack,
+      artifacts,
+    ) {
       return mockProviders.renderFinalVideo(
         session,
         lipSyncVideo,
         convertedVocal,
+        backingTrack,
         artifacts,
       );
     },

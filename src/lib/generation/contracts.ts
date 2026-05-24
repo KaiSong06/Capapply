@@ -33,6 +33,7 @@ export type GenerationProviders = {
     session: CreationSession,
     lipSyncVideo: ArtifactRef,
     convertedVocal: ArtifactRef,
+    backingTrack: ArtifactRef,
     artifacts: ArtifactStore,
   ): Promise<ArtifactRef>;
 };

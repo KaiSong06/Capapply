@@ -112,6 +112,7 @@ export async function runGeneration(input: {
       current,
       lipSyncVideo,
       convertedVocal,
+      instrumental,
       artifacts,
     );
 
