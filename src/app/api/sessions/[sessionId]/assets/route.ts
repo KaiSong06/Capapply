@@ -1,13 +1,34 @@
 import { NextResponse } from "next/server";
-import type { ArtifactKind } from "@/lib/domain/types";
-import { getNextStatusAfterAssetUpload } from "@/lib/domain/session-state";
-import { getStores } from "@/lib/server/stores";
+import { getNextStatusAfterAssetUpload } from "../../../../../lib/domain/session-state";
+import type {
+  ArtifactKind,
+  CreationStatus,
+} from "../../../../../lib/domain/types";
+import { getStores } from "../../../../../lib/server/stores";
 
 const allowedKinds = new Set<ArtifactKind>([
   "resume",
   "voice_sample",
   "face_media",
 ]);
+
+function getStatusAfterAssetUpload(status: CreationStatus): CreationStatus {
+  if (status === "assets_ready") return "assets_ready";
+  return getNextStatusAfterAssetUpload(status);
+}
+
+function isUploadFile(value: FormDataEntryValue | null): value is File {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "name" in value &&
+    typeof value.name === "string" &&
+    "type" in value &&
+    typeof value.type === "string" &&
+    "arrayBuffer" in value &&
+    typeof value.arrayBuffer === "function"
+  );
+}
 
 export async function POST(
   request: Request,
@@ -25,8 +46,19 @@ export async function POST(
   const kind = String(form.get("kind")) as ArtifactKind;
   const file = form.get("file");
 
-  if (!allowedKinds.has(kind) || !(file instanceof File)) {
+  if (!allowedKinds.has(kind) || !isUploadFile(file)) {
     return NextResponse.json({ error: "Invalid asset upload" }, { status: 400 });
+  }
+
+  let nextStatus: CreationStatus;
+
+  try {
+    nextStatus = getStatusAfterAssetUpload(session.status);
+  } catch {
+    return NextResponse.json(
+      { error: "Invalid asset upload state" },
+      { status: 400 },
+    );
   }
 
   const artifact = await artifacts.putBuffer(sessionId, {
@@ -37,7 +69,7 @@ export async function POST(
   });
 
   const nextSession = await sessions.update(sessionId, {
-    status: getNextStatusAfterAssetUpload(session.status),
+    status: nextStatus,
     artifacts: [
       ...session.artifacts.filter((item) => item.kind !== kind),
       artifact,
