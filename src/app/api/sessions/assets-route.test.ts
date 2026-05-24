@@ -2,6 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ArtifactRef } from "../../../lib/domain/types";
 import { createArtifactStore } from "../../../lib/storage/artifacts";
 import { createSessionStore } from "../../../lib/storage/sessions";
 import { POST } from "./[sessionId]/assets/route";
@@ -126,5 +127,38 @@ describe("session asset upload route", () => {
     expect(upload.response.status).toBe(400);
     expect(upload.body).toEqual({ error: "Invalid asset upload state" });
     expect(getStoresMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not write an artifact when the latest session state no longer accepts assets", async () => {
+    const realSessions = createSessionStore(root);
+    const session = await realSessions.create();
+    const staleSession = await realSessions.update(session.id, {
+      status: "assets_ready",
+    });
+    const putBuffer = vi.fn(async (): Promise<ArtifactRef> => {
+      throw new Error("artifact write should not happen");
+    });
+
+    getStoresMock.mockReturnValue({
+      sessions: {
+        get: vi.fn(async () => staleSession),
+        updateWith: vi.fn(async (_sessionId, updater) => {
+          const latest = {
+            ...staleSession,
+            status: "job_selected" as const,
+          };
+          const patch = await updater(latest);
+
+          return { ...latest, ...patch };
+        }),
+      },
+      artifacts: { putBuffer },
+    });
+
+    const upload = await uploadAsset(session.id, "resume", "resume.txt");
+
+    expect(upload.response.status).toBe(400);
+    expect(upload.body).toEqual({ error: "Invalid asset upload state" });
+    expect(putBuffer).not.toHaveBeenCalled();
   });
 });

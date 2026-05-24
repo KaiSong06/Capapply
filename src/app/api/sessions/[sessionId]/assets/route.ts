@@ -54,35 +54,34 @@ export async function POST(
     return NextResponse.json({ error: "Invalid asset upload" }, { status: 400 });
   }
 
-  let nextStatus: CreationStatus;
+  const buffer = Buffer.from(await file.arrayBuffer());
 
-  try {
-    nextStatus = getStatusAfterAssetUpload(session.status);
-  } catch {
+  const nextSession = await sessions
+    .updateWith(sessionId, async (current) => {
+      const nextStatus = getStatusAfterAssetUpload(current.status);
+      const artifact = await artifacts.putBuffer(sessionId, {
+        kind,
+        filename: file.name,
+        contentType: file.type || "application/octet-stream",
+        buffer,
+      });
+
+      return {
+        status: nextStatus,
+        artifacts: [
+          ...current.artifacts.filter((item) => item.kind !== kind),
+          artifact,
+        ],
+      };
+    })
+    .catch(() => null);
+
+  if (!nextSession) {
     return NextResponse.json(
       { error: "Invalid asset upload state" },
       { status: 400 },
     );
   }
-
-  const artifact = await artifacts.putBuffer(sessionId, {
-    kind,
-    filename: file.name,
-    contentType: file.type || "application/octet-stream",
-    buffer: Buffer.from(await file.arrayBuffer()),
-  });
-
-  const nextSession = await sessions.updateWith(sessionId, (current) => {
-    const currentNextStatus = getStatusAfterAssetUpload(current.status);
-
-    return {
-      status: currentNextStatus,
-      artifacts: [
-        ...current.artifacts.filter((item) => item.kind !== kind),
-        artifact,
-      ],
-    };
-  });
 
   return NextResponse.json({ session: nextSession });
 }

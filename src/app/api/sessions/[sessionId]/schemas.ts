@@ -1,13 +1,15 @@
 import { z } from "zod";
 
+const requiredString = z.string().min(1);
+
 export const normalizedJobSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  company: z.string(),
-  boardToken: z.string(),
-  location: z.string(),
-  content: z.string(),
-  absoluteUrl: z.string(),
+  id: requiredString,
+  title: requiredString,
+  company: requiredString,
+  boardToken: requiredString,
+  location: requiredString,
+  content: requiredString,
+  absoluteUrl: requiredString,
   updatedAt: z.string().nullable(),
 });
 

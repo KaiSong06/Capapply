@@ -123,6 +123,28 @@ describe("session routes", () => {
     expect(await response.json()).toEqual({ error: "Invalid job selection" });
   });
 
+  it("rejects empty required job selection strings", async () => {
+    const sessions = createSessionStore(root);
+    const session = await sessions.create();
+    await sessions.update(session.id, { status: "assets_ready" });
+
+    const emptyTitle = await selectJob(
+      jsonRequest({ job: normalizedJob({ title: "" }) }),
+      context(session.id),
+    );
+    const emptyBoardToken = await selectJob(
+      jsonRequest({ job: normalizedJob({ boardToken: "" }) }),
+      context(session.id),
+    );
+
+    expect(emptyTitle.status).toBe(400);
+    expect(await emptyTitle.json()).toEqual({ error: "Invalid job selection" });
+    expect(emptyBoardToken.status).toBe(400);
+    expect(await emptyBoardToken.json()).toEqual({
+      error: "Invalid job selection",
+    });
+  });
+
   it("rejects non-processable or malformed song selections", async () => {
     const sessions = createSessionStore(root);
     const session = await sessions.create();
