@@ -5,6 +5,7 @@ import type {
   CreationStatus,
 } from "../../../../../lib/domain/types";
 import { getStores } from "../../../../../lib/server/stores";
+import { validateRouteSessionId } from "../route-helpers";
 
 const allowedKinds = new Set<ArtifactKind>([
   "resume",
@@ -35,6 +36,9 @@ export async function POST(
   context: { params: Promise<{ sessionId: string }> },
 ) {
   const { sessionId } = await context.params;
+  const invalidSessionIdResponse = validateRouteSessionId(sessionId);
+  if (invalidSessionIdResponse) return invalidSessionIdResponse;
+
   const { sessions, artifacts } = getStores();
   const session = await sessions.get(sessionId);
 
@@ -68,12 +72,16 @@ export async function POST(
     buffer: Buffer.from(await file.arrayBuffer()),
   });
 
-  const nextSession = await sessions.update(sessionId, {
-    status: nextStatus,
-    artifacts: [
-      ...session.artifacts.filter((item) => item.kind !== kind),
-      artifact,
-    ],
+  const nextSession = await sessions.updateWith(sessionId, (current) => {
+    const currentNextStatus = getStatusAfterAssetUpload(current.status);
+
+    return {
+      status: currentNextStatus,
+      artifacts: [
+        ...current.artifacts.filter((item) => item.kind !== kind),
+        artifact,
+      ],
+    };
   });
 
   return NextResponse.json({ session: nextSession });

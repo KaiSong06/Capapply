@@ -4,8 +4,12 @@ import path from "node:path";
 import type { CreationSession } from "@/lib/domain/types";
 
 export type SessionPatch = Partial<Omit<CreationSession, "id" | "createdAt">>;
+type SessionUpdater = (
+  current: CreationSession,
+) => SessionPatch | Promise<SessionPatch>;
 
 const sessionIdPattern = /^[a-f0-9-]{36}$/i;
+const updateQueues = new Map<string, Promise<unknown>>();
 
 export function assertSafeSessionId(sessionId: string): string {
   if (!sessionIdPattern.test(sessionId)) {
@@ -21,6 +25,10 @@ function sessionPath(root: string, sessionId: string): string {
     assertSafeSessionId(sessionId),
     "session.json",
   );
+}
+
+function updateQueueKey(root: string, sessionId: string): string {
+  return path.join(path.resolve(root), assertSafeSessionId(sessionId));
 }
 
 function createEmptySession(): CreationSession {
@@ -68,19 +76,45 @@ export function createSessionStore(root: string) {
     sessionId: string,
     patch: SessionPatch,
   ): Promise<CreationSession> {
-    const current = await get(sessionId);
-    if (!current) throw new Error(`Session not found: ${sessionId}`);
+    return updateWith(sessionId, () => patch);
+  }
 
-    return save({
-      ...current,
-      ...patch,
-      updatedAt: new Date().toISOString(),
-    });
+  async function updateWith(
+    sessionId: string,
+    updater: SessionUpdater,
+  ): Promise<CreationSession> {
+    const key = updateQueueKey(root, sessionId);
+    const previous = updateQueues.get(key) ?? Promise.resolve();
+
+    const next = previous
+      .catch(() => undefined)
+      .then(async () => {
+        const current = await get(sessionId);
+        if (!current) throw new Error(`Session not found: ${sessionId}`);
+        const patch = await updater(current);
+
+        return save({
+          ...current,
+          ...patch,
+          updatedAt: new Date().toISOString(),
+        });
+      });
+
+    updateQueues.set(key, next);
+
+    try {
+      return await next;
+    } finally {
+      if (updateQueues.get(key) === next) {
+        updateQueues.delete(key);
+      }
+    }
   }
 
   return {
     create,
     get,
     update,
+    updateWith,
   };
 }

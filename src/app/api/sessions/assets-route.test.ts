@@ -91,6 +91,31 @@ describe("session asset upload route", () => {
     expect(getStoresMock).toHaveBeenCalledTimes(3);
   });
 
+  it("keeps both artifacts when different asset uploads overlap", async () => {
+    const sessions = createSessionStore(root);
+    const draftSession = await sessions.create();
+
+    const [resumeUpload, voiceUpload] = await Promise.all([
+      uploadAsset(draftSession.id, "resume", "resume.txt"),
+      uploadAsset(draftSession.id, "voice_sample", "voice.txt"),
+    ]);
+
+    expect(resumeUpload.response.status).toBe(200);
+    expect(voiceUpload.response.status).toBe(200);
+
+    const stored = await sessions.get(draftSession.id);
+    expect(stored?.artifacts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: "resume", filename: "resume.txt" }),
+        expect.objectContaining({
+          kind: "voice_sample",
+          filename: "voice.txt",
+        }),
+      ]),
+    );
+    expect(stored?.artifacts).toHaveLength(2);
+  });
+
   it("returns a stable 400 response for invalid asset upload states", async () => {
     const sessions = createSessionStore(root);
     const session = await sessions.create();
