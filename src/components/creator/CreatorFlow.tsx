@@ -37,8 +37,14 @@ const stepLabels: Array<{ id: FlowStep; label: string }> = [
   { id: "export", label: "Export" },
 ];
 
+const generationAnimationMs = 3000;
+
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Something went wrong";
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function useAssetCompletion(session: CreationSession | null) {
@@ -147,7 +153,11 @@ export function CreatorFlow() {
     });
 
     try {
-      setSession(await startGeneration(session.id));
+      const [nextSession] = await Promise.all([
+        startGeneration(session.id),
+        wait(generationAnimationMs),
+      ]);
+      setSession(nextSession);
     } catch (error) {
       if (error instanceof ApiError && error.session) {
         setSession(error.session);
