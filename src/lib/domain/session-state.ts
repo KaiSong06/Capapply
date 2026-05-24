@@ -14,14 +14,31 @@ export function canTransition(from: CreationStatus, to: CreationStatus): boolean
   return allowedTransitions[from].includes(to);
 }
 
-export function getNextStatusAfterAssetUpload(): CreationStatus {
-  return "assets_ready";
+export function transitionStatus(
+  from: CreationStatus,
+  to: CreationStatus,
+): CreationStatus {
+  if (!canTransition(from, to)) {
+    throw new Error(`Invalid session status transition: ${from} -> ${to}`);
+  }
+
+  return to;
 }
 
-export function getNextStatusAfterJobSelection(): CreationStatus {
-  return "job_selected";
+export function getNextStatusAfterAssetUpload(
+  from: CreationStatus,
+): CreationStatus {
+  return transitionStatus(from, "assets_ready");
 }
 
-export function getNextStatusAfterSongSelection(): CreationStatus {
-  return "song_selected";
+export function getNextStatusAfterJobSelection(
+  from: CreationStatus,
+): CreationStatus {
+  return transitionStatus(from, "job_selected");
+}
+
+export function getNextStatusAfterSongSelection(
+  from: CreationStatus,
+): CreationStatus {
+  return transitionStatus(from, "song_selected");
 }
